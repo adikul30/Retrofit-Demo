@@ -1,6 +1,7 @@
 package kulkarni.aditya.retrofittry;
 
 import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -14,7 +15,10 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+import io.realm.Realm;
+import io.realm.RealmResults;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -35,9 +39,9 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView = (RecyclerView) findViewById(R.id.repo_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        repoAdapter = new RepoAdapter(this,gitHubRepos);
+        loadData();
+        repoAdapter = new RepoAdapter(this, gitHubRepos);
         recyclerView.setAdapter(repoAdapter);
-
         String API_BASE_URL = "https://api.github.com/";
 
         OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
@@ -66,22 +70,48 @@ public class MainActivity extends AppCompatActivity {
         // Execute the call asynchronously. Get a positive or negative callback.
         call.enqueue(new Callback<ArrayList<GitHubRepo>>() {
             @Override
-            public void onResponse(Call<ArrayList<GitHubRepo>> call, Response<ArrayList<GitHubRepo>> response) {
+            public void onResponse(@NonNull Call<ArrayList<GitHubRepo>> call, @NonNull Response<ArrayList<GitHubRepo>> response) {
                 // The network call was a success and we got a response
-                // TODO: use the repository list and display it
-                String result = response.toString();
-                repoAdapter.setList(response.body());
-                Log.i("Response",response.body().toString());
 
+                add(response.body());
+//                repoAdapter.setList(response.body());
+                Log.i("Response", response.body().toString());
 
             }
 
             @Override
-            public void onFailure(Call<ArrayList<GitHubRepo>> call, Throwable t) {
+            public void onFailure(@NonNull Call<ArrayList<GitHubRepo>> call, @NonNull Throwable t) {
                 // the network call was a failure
-                // TODO: handle error
             }
         });
 
+    }
+
+    public void loadData() {
+        gitHubRepos.clear();
+        Realm.init(this);
+        Realm realm = Realm.getDefaultInstance();
+        RealmResults<GitHubRepo> query = realm.where(GitHubRepo.class).findAll();
+        for (GitHubRepo repo : query) {
+            if (repo.isValid()) {
+                gitHubRepos.add(repo);
+            }
+        }
+    }
+
+    public void add(ArrayList<GitHubRepo> arrayList) {
+        Realm realm = Realm.getDefaultInstance();
+
+        for (int i = 0; i < arrayList.size(); i++) {
+            realm.beginTransaction();
+            GitHubRepo model = realm.createObject(GitHubRepo.class);
+            model.setId(arrayList.get(i).getId());
+            model.setName(arrayList.get(i).getName());
+            realm.commitTransaction();
+            gitHubRepos.add(model);
+        }
+
+        repoAdapter.notifyDataSetChanged();
+        loadData();
     }
 }
