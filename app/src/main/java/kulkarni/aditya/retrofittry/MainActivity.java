@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import io.realm.Sort;
 import okhttp3.OkHttpClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -103,14 +105,19 @@ public class MainActivity extends AppCompatActivity {
         Realm realm = Realm.getDefaultInstance();
 
         for (int i = 0; i < arrayList.size(); i++) {
-            realm.beginTransaction();
-            GitHubRepo model = realm.createObject(GitHubRepo.class);
-            model.setId(arrayList.get(i).getId());
-            model.setName(arrayList.get(i).getName());
-            realm.commitTransaction();
-            gitHubRepos.add(model);
+            RealmQuery<GitHubRepo> existsQuery = realm.where(GitHubRepo.class).equalTo("id",arrayList.get(i).getId());
+            RealmResults<GitHubRepo> existsResults = existsQuery.findAll();
+            Log.d("before if",existsResults.toString());
+            if(existsResults.isEmpty()){
+                realm.beginTransaction();
+                GitHubRepo model = realm.createObject(GitHubRepo.class);
+                model.setId(arrayList.get(i).getId());
+                model.setName(arrayList.get(i).getName());
+                realm.commitTransaction();
+                gitHubRepos.add(model);
+            }
         }
-
+        realm.close();
         repoAdapter.notifyDataSetChanged();
         loadData();
     }

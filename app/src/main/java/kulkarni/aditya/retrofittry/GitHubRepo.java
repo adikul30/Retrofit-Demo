@@ -14,6 +14,7 @@ import retrofit2.http.Path;
 public class GitHubRepo extends RealmObject {
     private int id;
     private String name;
+    private String visibility;
 
     public GitHubRepo() {
     }
@@ -32,6 +33,14 @@ public class GitHubRepo extends RealmObject {
 
     public String getName() {
         return name;
+    }
+
+    public String getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(String visibility) {
+        this.visibility = visibility;
     }
 }
 
